@@ -25,44 +25,51 @@ type Plant struct {
 }
 
 func (p *Plant) act(g *Grid) bool {
-	// Age
+	// Check for the chance to spawn.
 	if threshhold := rand.Intn(100); threshhold < 5 {
+		// We're spawning, choose a random direction to try and spread.
 		direction := rand.Intn(8)
 		cX := p.x - directionModifiers[direction][0]
 		cY := p.y - directionModifiers[direction][1]
 		if a, inbounds := g.getCell(cX, cY); inbounds {
 			if a == nil {
+				// We have enough energy to spawn, huzzah.
 				if p.energy > 100 {
 					newPlant := p.split(cX, cY)
 					g.append(&newPlant, newPlant.x, newPlant.y)
 				}
 			} else {
-				if p.altruistic && p.energy > a.getEnergy() {
-					split := (p.energy + a.getEnergy()) / 2
-					p.energy = split
-					a.setEnergy(split)
+				if p.altruistic {
+					// Altruistic plants will share their energy as long as they won't
+					// steal energy from their target. Sharing averages out their
+					// respective energies.
+					if p.energy > a.getEnergy() {
+						split := (p.energy + a.getEnergy()) / 2
+						p.energy = split
+						a.setEnergy(split)
+					}
 				} else {
-					p.energy -= 5
+					// Nonaltruistic plants are theives. They steal energy, though some
+					// is wasted.
+					p.energy += 8
+					a.setEnergy(a.getEnergy() - 5)
 				}
+				// Stagnation penelty.
+				p.energy -= 5
 			}
 		}
 		return true
 	} else if threshhold < 60 && p.energy < 121 {
+		// Not spawning, we rolled the get energy result.
 		p.energy++
 	} else if p.energy == 0 {
+		// check for starvation
 		g.remove(p.x, p.y)
 	} else {
+		// if nothing else lose an energy.
 		p.energy--
 	}
 	return false
-}
-
-func (p *Plant) setEnergy(newEnergy int) {
-	p.energy = newEnergy
-}
-
-func (p *Plant) getEnergy() int {
-	return p.energy
 }
 
 func (p *Plant) split(x, y int) Plant {
@@ -121,6 +128,14 @@ func (p *Plant) setY(cY int) {
 	p.y = cY
 }
 
+func (p *Plant) setEnergy(newEnergy int) {
+	p.energy = newEnergy
+}
+
+func (p *Plant) getEnergy() int {
+	return p.energy
+}
+
 func (p *Plant) create() {
 	p.x, p.y = rand.Intn(63), rand.Intn(47)
 	p.energy = 50
@@ -133,6 +148,12 @@ func (p *Plant) draw(unitsize float64, cr *cairo.Context) {
 	x, y := float64(p.x)*unitsize, float64(p.y)*unitsize
 	cr.Rectangle(x, y, unitsize, unitsize)
 	cr.Fill()
+	// Need some way of seeing what plants are altruistic.
+	if p.altruistic {
+		cr.SetSourceRGBA(0, 0, 0, 1)
+		cr.Rectangle(x+3, y+3, unitsize-6, unitsize-6)
+		cr.Fill()
+	}
 }
 
 func (p *Plant) getBrightness() float64 {
