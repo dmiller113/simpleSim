@@ -51,11 +51,11 @@ func (p *Plant) act(g *Grid) bool {
 				} else {
 					// Nonaltruistic plants are theives. They steal energy, though some
 					// is wasted.
-					p.energy += 8
-					a.setEnergy(a.getEnergy() - 5)
+					p.energy += 6
+					a.setEnergy(a.getEnergy() - 8)
 				}
 				// Stagnation penelty.
-				p.energy -= 5
+				p.energy -= 3
 			}
 		}
 		return true
@@ -76,7 +76,7 @@ func (p *Plant) split(x, y int) Plant {
 	// Check for mutation
 	r, g, b, a := p.color.r, p.color.g, p.color.b, p.altruistic
 
-	if threshhold := rand.Intn(400); threshhold < 1 {
+	if threshhold := rand.Intn(200); threshhold < 1 {
 		flip := rand.Intn(7)
 		switch flip {
 		case 0:
